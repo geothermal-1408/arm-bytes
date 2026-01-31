@@ -105,7 +105,7 @@ make DBG=1
 - `bin/`: Final runnable binaries linked by `clang`.
 - `Makefile`: Build rules for assembling and linking.
 
-## Acknowledgements
+## Reference
 
 - [ARM64 Assembly guide](https://cybersandeep.gitbook.io/arm64basicguide)
 

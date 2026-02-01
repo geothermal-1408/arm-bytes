@@ -56,7 +56,7 @@ starting:
 	bl _print_str
 	
 	// read no's
-
+	
 	mov x0, STDIN
 	add x1, x19, x20
 	mov x2, 4096
@@ -112,6 +112,22 @@ calc_finish:
 	add x0, x0, prompt3@PAGEOFF
 	bl _print_str
 
+	fcmp d0, #0.0
+	b.ge convert_int 
+
+	mov w0, 45  // '-' -> 45
+	adrp x1, buffer@PAGE
+	add x1, x1, buffer@PAGEOFF
+	strb w0, [x1]
+
+	mov x2, 1
+	mov x0, STDOUT
+	ldr x16, =SYSCALL_WRITE
+	svc 0
+
+	fabs d0, d0
+
+convert_int:	
 	fcvtzs x9, d0
 
 	mov x0, x9

@@ -78,6 +78,16 @@ Or run directly:
 ./bin/<file_base_name>
 ```
 
+## run tests
+
+```bash
+chmod +x test.expect
+./test.expect
+```
+
+> [!IMPORTANT]
+> If you don't have 'expect' download it first.
+
 ## Debugging (Optional)
 
 Use `lldb` to step through instructions:

@@ -69,6 +69,8 @@ starting:
 	bl _atoi
 	mov x23, x0
 	mov x24, x1
+
+	scvtf d0, x23
 	
 calc_loop:
 	ldrb w2, [x24]
@@ -78,9 +80,10 @@ calc_loop:
 
 	add x0, x24, 1
 	bl _atoi
-
 	mov x24, x1
 
+	scvtf d1, x0
+	
 	cmp w22, 43 // '+'
 	beq do_add
 	cmp w22, 45 // '-'
@@ -92,16 +95,16 @@ calc_loop:
 	b calc_loop
 
 do_add:
-	add x23, x23, x0
+	fadd d0, d0, d1
 	b calc_loop
 do_sub:
-	sub x23, x23, x0
+	fsub d0, d0, d1
 	b calc_loop
 do_multi:
-	mul x23, x23, x0
+	fmul d0, d0, d1
 	b calc_loop
 do_div:
-	sdiv x23, x23, x0
+	fdiv d0, d0, d1
 	b calc_loop
 
 calc_finish:
@@ -109,12 +112,14 @@ calc_finish:
 	add x0, x0, prompt3@PAGEOFF
 	bl _print_str
 
-	mov x0, x23
+	fcvtzs x9, d0
+
+	mov x0, x9
 	adrp x1, buffer@PAGE
 	add x1, x1, buffer@PAGEOFF
 	bl _itoa
 
-	//rint no string
+	//print no string
 	
 	mov x2, x0
 	adrp x1, buffer@PAGE
@@ -123,6 +128,41 @@ calc_finish:
 	ldr x16, =SYSCALL_WRITE
 	svc 0
 
+	adrp x0, dot@PAGE
+	add x0, x0, dot@PAGEOFF
+	mov x2, 1
+	mov x1, x0
+	mov x0, STDOUT
+	ldr x16, =SYSCALL_WRITE
+	svc 0
+
+	scvtf d1, x9
+	fsub d2, d0, d1
+
+	mov x10, 10000
+	scvtf d3, x10
+	fmul d2, d2, d3
+
+	fcvtzs x11, d2
+
+	cmp x11, 0
+	b.ge print_frac
+	neg x11, x11
+
+print_frac:
+	mov x0, x11
+	adrp x1, buffer@PAGE
+	add x1, x1, buffer@PAGEOFF
+	bl _itoa
+
+	mov x2, x0
+	adrp x1, buffer@PAGE
+	add x1, x1, buffer@PAGEOFF
+	mov x0, STDOUT
+	ldr x16, =SYSCALL_WRITE
+	svc 0
+	
+end_sequence:	
 	adrp x0, newline@PAGE
 	add x0, x0, newline@PAGEOFF
 	mov x2, 1
@@ -141,13 +181,13 @@ ending:
 	ldr x16, =SYSCALL_MUNMAP
 	svc 0
 	
-	//it 
+	//exit 
 	mov x0, 0
 	ldr x16, =SYSCALL_EXIT
 	svc 0
 
 
-	//broutine
+	//subbroutine
 	
 _print_str:
     mov x9, x30     
@@ -252,3 +292,5 @@ newline:
 	.asciz "\n"
 buffer:
 	.space 32
+dot:
+	.asciz "."

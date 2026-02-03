@@ -16,8 +16,16 @@ set tests {
     "Division|/|7 2|3.5"
     "Multiple|+|1 2 3 4|10.0"
     "ChainedDiv|/|100 2 5|10.0"
+    
     "veResult|-|5 10|-5.0"
     "veChainResult|-|5 10 10|-15.0"
+    
+    "veValueAddition|+|-10 -20|-30.0"
+    "veValueSubtraction|-|-50 -20|-30.0"
+    "veValueMultiplication|*|-6 -7|42.0"
+    "veValueDivision|/|-7 2|-3.5"
+    "DoubleNegDiv|/|-20 -2|10.0"
+
 }
 
 set passed 0

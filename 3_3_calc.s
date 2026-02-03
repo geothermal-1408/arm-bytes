@@ -233,12 +233,19 @@ strlen_finish:
 
 	
 _atoi:
-	mov x2, 0 //cummalator
-	mov x3, 0 //current byte
-
-atoi_loop:
+	mov x2, 0 // acummalator
+	mov x3, 0 // current byte
+	mov x5, 1 // sign flag (1 | -1)
+	
 	ldrb w3, [x0] 
+	cmp w3, 45
+	b.ne atoi_loop
 
+	mov x5, -1
+	add x0, x0, 1
+	
+atoi_loop:
+	ldrb w3, [x0]
 	sub w3, w3, 48
 	cmp w3, 9
 	b.hi atoi_done
@@ -250,6 +257,7 @@ atoi_loop:
 	b atoi_loop
 
 atoi_done:
+	mul x2, x2, x5
 	mov x1, x0 
 	mov x0, x2
 	ret

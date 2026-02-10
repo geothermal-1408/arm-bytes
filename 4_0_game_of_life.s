@@ -3,39 +3,137 @@
 	
 	.data
 	
-	.equ COLS, 10
-	.equ ROWS, 10
-	.equ SIZE, 100
 str_clear:
 	.asciz "\033[H\033[J"
+str_alive:
+	.asciz "# "
+str_dead:
+	.asciz ". "
+str_nl:
+	.asciz "\n"
+str_usage:
+	.asciz "Usage: ./bin/4_0_game_of_life <rows> <cols>\n"
 
-grid:		.zero 100
-next_grid:	.zero 100
-str_alive:	.asciz "# "
-str_dead:	.asciz ". "
-str_nl:		.asciz "\n"
+g_rows:
+	.quad 20
+g_cols:
+	.quad 20
+g_size:
+	.quad 400
+g_grid:
+	.quad 0
+g_next_grid:
+	.quad 0
 
 	.text
 _main:
-	stp x29, x30, [sp, #-16]!
+	stp x29, x30, [sp, #-48]!
 	mov x29, sp
+	stp x19, x20, [sp, #16]
+	stp x21, x22, [sp, #32]
 
+	mov x19, #20
+	mov x20, #20
+
+	cmp x0, #3
+	b.lt use_defaults
+
+	//parse rows
+	mov x21, x1
+	ldr x0, [x21, #8]
+	bl _atoi
+	mov x19, x0
+
+	//parse cols
+	ldr x0, [x21, #16]
+	bl _atoi
+	mov x20, x0
+
+	cmp x19, #3
+	b.lt show_usage
+	cmp x20, #3
+	b.lt show_usage
+
+use_defaults:
+	adrp x10, g_rows@PAGE
+	add x10, x10, g_rows@PAGEOFF
+	str x19, [x10]
+
+	adrp x10, g_cols@PAGE
+	add x10, x10, g_cols@PAGEOFF
+	str x20, [x10]
+
+	mul x21, x19, x20 // size = rows*cols
+	adrp x10, g_size@PAGE
+	add x10, x10, g_size@PAGEOFF
+	str x21, [x10]
+
+	//malloc
+	mov x0, x21
+	bl _malloc
+	adrp x10, g_grid@PAGE
+	add x10, x10, g_grid@PAGEOFF
+	str x0, [x10]
+	mov x19, x0
+	
+	adrp x10, g_size@PAGE
+	add x10, x10, g_size@PAGEOFF
+	ldr x1, [x10]
+	mov x11, #0
+
+zero_grid:
+	cmp x11, x1
+	b.ge zero_grid_done
+	strb wzr, [x19, x11]
+	add x11, x11, #1
+	b zero_grid
+
+zero_grid_done:
+	adrp x10, g_size@PAGE
+	add x10, x10, g_size@PAGEOFF
+	ldr x0, [x10]
+	bl _malloc
+
+	adrp x10, g_next_grid@PAGE
+	add x10, x10, g_next_grid@PAGEOFF
+	str x0, [x10]
+	mov x20, x0
+
+	adrp x10, g_size@PAGE
+	add x10, x10, g_size@PAGEOFF
+	ldr x1, [x10]
+	mov x11, #0
+
+zero_next:
+	cmp x11, x1
+	b.ge zero_next_done
+	strb wzr, [x20, x11]
+	add x11, x11, #1
+	b zero_next
+
+zero_next_done:
+	
 	//glider
 	// . # .
 	// . . #
 	// # # #
-
-	adrp x0, grid@PAGE
-	add x0, x0, grid@PAGEOFF
-
+	
+	adrp x10, g_cols@PAGE
+	add x10, x10, g_cols@PAGEOFF
+	ldr x12, [x10]
+	
 	/*** extract '#' ***/
 
 	mov w1, #1
-	strb w1, [x0, #1]
-	strb w1, [x0, #12]
-	strb w1, [x0, #20]
-	strb w1, [x0, #21]
-	strb w1, [x0, #22]
+	strb w1, [x19, #1]
+	add x13, x12, #2
+	strb w1, [x19, x13]
+	lsl x14, x12, #1
+	strb w1, [x19, x14]
+	add x15, x14, #1
+	strb w1, [x19, x15]
+	add x15, x14, #2
+	strb w1, [x19, x15]
 
 	bl _print_grid
 
@@ -52,21 +150,38 @@ game_loop:
 
 	b game_loop
 
-	mov x0, #0
-	ldp x29, x30, [sp], #16
+show_usage:
+	adrp x0, str_usage@PAGE
+	add x0, x0, str_usage@PAGEOFF
+	bl _printf
+	mov x0, #1
+	ldp x21, x22, [sp, #32]
+	ldp x19, x20, [sp, #16]
+	ldp x29, x30, [sp], #48
 	ret
 	
 _print_grid:
-	stp x29, x30, [sp, #-32]!
+	stp x29, x30, [sp, #-48]!
 	mov x29, sp
-	stp x19, x20, [sp,16]
+	stp x19, x20, [sp, #16]
+	stp x21, x22, [sp, #32]
 
-	adrp x19, grid@PAGE
-	add x19, x19, grid@PAGEOFF
-	mov x20, #0 // loop counter
+	adrp x10, g_grid@PAGE
+	add x10, x10, g_grid@PAGEOFF
+	ldr x19, [x10] // loop counter
+
+	adrp x10, g_size@PAGE
+	add x10, x10, g_size@PAGEOFF
+	ldr x21, [x10] // loop counter
+
+	adrp x10, g_cols@PAGE
+	add x10, x10, g_cols@PAGEOFF
+	ldr x22, [x10] // loop counter
+		
+	mov x20, #0
 
 print_loop:
-	cmp x20, SIZE
+	cmp x20, x21
 	b.ge print_done
 
 	ldrb w1, [x19, x20]
@@ -84,11 +199,10 @@ print_alive:
 	bl _printf
 
 check_newline:
-	add x21, x20, #1	// x21	= counter + 1
-	mov x22, COLS
-	udiv x23, x21, x22	// x23	= x21 / COLS
-	msub x24, x23, x22, x21 //x24	= reminder
-	cbnz x24, next_iter
+	add x10, x20, #1
+	udiv x11, x10, x22
+	msub x12, x11, x22, x10
+	cbnz x12, next_iter
 
 	adrp x0, str_nl@PAGE
 	add x0, x0, str_nl@PAGEOFF
@@ -99,19 +213,25 @@ next_iter:
 	b print_loop
 
 print_done:
+	ldp x21, x22, [sp, #32]
 	ldp x19, x20, [sp, #16]
-	ldp x29, x30, [sp], #32
+	ldp x29, x30, [sp], #48
 	ret
 	
 _count_neighbour:
 	stp x29, x30, [sp, #-16]!
 	mov x29, sp
-	adrp x1, grid@PAGE
-	add x1, x1, grid@PAGEOFF
+	
+	adrp x10, g_grid@PAGE
+	add x10, x10, g_grid@PAGEOFF
+	ldr x1, [x10]
 
+	adrp x10, g_cols@PAGE
+	add x10, x10, g_cols@PAGEOFF
+	ldr x10, [x10]
+	
 	mov x2, #0
 
-	mov x10, COLS
 	udiv x5, x0, x10 // x5 = row
 	msub x6, x5, x10, x0 // x6 = col
 
@@ -164,19 +284,27 @@ _count_neighbour:
 _check_add_neighbour:
 	cmp x7, #0
 	b.lt _skip_neighbour
-	cmp x7, ROWS
+
+	adrp x9, g_rows@PAGE
+	add x9, x9, g_rows@PAGEOFF
+	ldr x9, [x9]
+	cmp x7, x9
 	b.ge _skip_neighbour
+
 	cmp x8, #0
 	b.lt _skip_neighbour
-	cmp x8, COLS
+
+	adrp x9, g_cols@PAGE
+	add x9, x9, g_cols@PAGEOFF
+	ldr x9, [x9]
+	cmp x8, x9
 	b.ge _skip_neighbour
-	
-	mov x9, COLS
-	mul x4, x7, x9
+
+	mul x4, x7, x9 // rows*cols
 	add x4, x4, x8
 	ldrb w3, [x1, x4]
 	add x2, x2, x3
-
+	
 _skip_neighbour:
 	ret
 
@@ -186,15 +314,22 @@ _update_grid:
 	stp x19, x20, [sp, #16]  // x19=index, x20=grid_base
 	stp x21, x22, [sp, #32]  // x21 = next_grid x22 = cell_state
 
-	adrp x20, grid@PAGE
-	add x20, x20, grid@PAGEOFF
-	adrp x21, next_grid@PAGE
-	add x21, x21, next_grid@PAGEOFF
+	adrp x10, g_grid@PAGE
+	add x10, x10, g_grid@PAGEOFF
+	ldr x20, [x10]
 
+	adrp x10, g_next_grid@PAGE
+	add x10, x10, g_next_grid@PAGEOFF
+	ldr x21, [x10]
+
+	adrp x10, g_size@PAGE
+	add x10, x10, g_size@PAGEOFF
+	ldr x22, [x10]
+	
 	mov x19, #0
 
 clear_next_loop:
-	cmp x19, SIZE
+	cmp x19, x22
 	b.ge clear_next_done
 	strb wzr, [x21, x19]
 	add x19, x19, #1
@@ -204,10 +339,10 @@ clear_next_done:
 	mov x19, #0
 
 update_loop:
-	cmp x19, SIZE
+	cmp x19, x22
 	b.ge update_apply_swap
 
-	ldrb w22, [x20, x19]
+	ldrb w23, [x20, x19]
 
 	mov x0, x19
 	bl _count_neighbour
@@ -220,7 +355,7 @@ update_loop:
 	    Rule: Dead(0)  and Neighbors == 3 -> Alive
 	 */
 
-	cmp w22, #1
+	cmp w23, #1
 	b.eq case_alive
 
 case_dead:
@@ -236,17 +371,11 @@ case_alive:
 	b become_dead
 
 become_alive:
-	mov w4, #1
-	b store_cell
-
 stay_alive:
 	mov w4, #1
 	b store_cell
 
 become_dead:
-	mov w4, #0
-	b store_cell
-
 store_dead:
 	mov w4, #0
 
@@ -259,7 +388,7 @@ update_apply_swap:
 	mov x19, #0
 
 copy_loop:
-	cmp x19, SIZE
+	cmp x19, x22
 	b.ge update_done
 	ldrb w0, [x21, x19]
 	strb w0, [x20, x19]

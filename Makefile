@@ -7,9 +7,13 @@ SRCS := $(wildcard *.s)
 OBJS := $(SRCS:%.s=obj/%.o)
 BINS := $(SRCS:%.s=bin/%)
 
-ifeq ($(DBG),1)
-    ASFLAGS += -g
-endif
+# Files to build with debug info (passed from command line)
+DEBUG ?=
+DEBUG_OBJS := $(DEBUG:%.s=obj/%.o)
+
+# Add -g only for selected object files
+$(DEBUG_OBJS): ASFLAGS += -g
+
 
 .PHONY: all clean
 

@@ -1,7 +1,7 @@
 	.global _main
 	.align 2
 	
-	.data
+	.section __TEXT,__cstring
 	
 str_clear:
 	.asciz "\033[H\033[J"
@@ -13,7 +13,13 @@ str_nl:
 	.asciz "\n"
 str_usage:
 	.asciz "Usage: ./bin/4_0_game_of_life <rows> <cols>\n"
+str_menu:
+	.asciz "Select Pattern:\n1. Glider\n2. Spaceship\nEnter choice: "
+fmt_scan:
+	.asciz "%d"
 
+	.section __DATA,__data
+	.align 3
 g_rows:
 	.quad 20
 g_cols:
@@ -36,7 +42,7 @@ _main:
 	mov x20, #20
 
 	cmp x0, #3
-	b.lt use_defaults
+	b.lt show_usage
 
 	//parse rows
 	mov x21, x1
@@ -112,22 +118,43 @@ zero_next:
 	b zero_next
 
 zero_next_done:
+	//menu
+	adrp x0, str_menu@PAGE
+	add x0, x0, str_menu@PAGEOFF
+	bl _printf
+
+	sub sp, sp, #16
+	//str wzr, [sp]
 	
+	adrp x0, fmt_scan@PAGE
+	add x0, x0, fmt_scan@PAGEOFF
+	add x1, sp, #16
+	str x1, [sp]
+	bl _scanf
+	
+	ldr w1, [sp, #16]
+	str x1, [sp]
+	cmp w1, #2
+	b.eq init_spaceship
+
+	b init_glider
+
+init_glider:
 	//glider
 	// . # .
 	// . . #
 	// # # #
 	
+	mov w1, #1
+	
+	strb w1, [x19, #1]
+
 	adrp x10, g_cols@PAGE
 	add x10, x10, g_cols@PAGEOFF
 	ldr x12, [x10]
-	
-	/*** extract '#' ***/
-
-	mov w1, #1
-	strb w1, [x19, #1]
 	add x13, x12, #2
 	strb w1, [x19, x13]
+	
 	lsl x14, x12, #1
 	strb w1, [x19, x14]
 	add x15, x14, #1
@@ -135,8 +162,50 @@ zero_next_done:
 	add x15, x14, #2
 	strb w1, [x19, x15]
 
-	bl _print_grid
+	b start_game
+	
+init_spaceship:
 
+	// Shape:
+	// . # . . #
+	// # . . . .
+	// # . . . #
+	// # # # # .
+	
+	mov w1, #1
+	
+	adrp x10, g_cols@PAGE
+	add x10, x10, g_cols@PAGEOFF
+	ldr x12, [x10]
+
+	//row 0
+	strb w1, [x19, #1]
+	strb w1, [x19, #4]
+
+	//row 1
+	strb w1, [x19, x12]
+
+	//row 2
+	lsl x14, x12, #1
+	strb w1, [x19, x14]
+	add x15, x14, #4
+	strb w1, [x19, x15]
+
+	//row 3
+	add x16, x14, x12
+	strb w1, [x19, x16]
+	add x15, x16, #1
+	strb w1, [x19, x15]
+	add x15, x16, #2
+	strb w1, [x19, x15]
+	add x15, x16, #3
+	strb w1, [x19, x15]
+
+	b start_game
+	
+start_game:	
+	bl _print_grid
+	
 game_loop:
 	adrp x0, str_clear@PAGE
 	add x0, x0, str_clear@PAGEOFF
@@ -168,7 +237,7 @@ _print_grid:
 
 	adrp x10, g_grid@PAGE
 	add x10, x10, g_grid@PAGEOFF
-	ldr x19, [x10] // loop counter
+	ldr x19, [x10]
 
 	adrp x10, g_size@PAGE
 	add x10, x10, g_size@PAGEOFF
@@ -282,30 +351,42 @@ _count_neighbour:
 	ret
 
 _check_add_neighbour:
-	cmp x7, #0
-	b.lt _skip_neighbour
-
 	adrp x9, g_rows@PAGE
 	add x9, x9, g_rows@PAGEOFF
 	ldr x9, [x9]
+
+	cmp x7, #0
+	b.ge check_row_max
+	add x7, x7, x9
+	b done_row_wrap
+	
+check_row_max:
 	cmp x7, x9
-	b.ge _skip_neighbour
+	b.lt done_row_wrap
+	sub x7, x7, x9
+
+done_row_wrap:
+	adrp x10, g_cols@PAGE
+	add x10, x10, g_cols@PAGEOFF
+	ldr x10, [x10]
 
 	cmp x8, #0
-	b.lt _skip_neighbour
+	b.ge check_col_max
+	add x8, x8, x10
+	b done_col_wrap
 
-	adrp x9, g_cols@PAGE
-	add x9, x9, g_cols@PAGEOFF
-	ldr x9, [x9]
-	cmp x8, x9
-	b.ge _skip_neighbour
+check_col_max:
+	cmp x8, x10
+	b.lt done_col_wrap
+	sub x8, x8, x10
 
-	mul x4, x7, x9 // rows*cols
+done_col_wrap:
+	mul x4, x7, x10
 	add x4, x4, x8
+
 	ldrb w3, [x1, x4]
 	add x2, x2, x3
-	
-_skip_neighbour:
+
 	ret
 
 _update_grid:

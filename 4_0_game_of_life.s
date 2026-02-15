@@ -14,7 +14,7 @@ str_nl:
 str_usage:
 	.asciz "Usage: ./bin/4_0_game_of_life <rows> <cols>\n"
 str_menu:
-	.asciz "Select Pattern:\n1. Glider\n2. Spaceship\nEnter choice: "
+	.asciz "Select Pattern:\n1. Glider\n2. Spaceship\n3. Pulsator\nEnter choice: "
 fmt_scan:
 	.asciz "%d"
 
@@ -134,6 +134,10 @@ zero_next_done:
 	
 	ldr w1, [sp, #16]
 	str x1, [sp]
+
+	cmp w1, #3
+	b.eq init_pulsator
+
 	cmp w1, #2
 	b.eq init_spaceship
 
@@ -200,6 +204,97 @@ init_spaceship:
 	strb w1, [x19, x15]
 	add x15, x16, #3
 	strb w1, [x19, x15]
+
+	b start_game
+
+init_pulsator:
+	// Pulsating Shape:
+	
+	// . . . # # . # . . . . .
+	// # . . . . . . # . . . .
+	// # . . # . . . # # . . .
+	// . # # . . . . . # . # #
+	// . # # . . . . . # . # #
+	// # . . # . . . # # . . .
+	// # . . . . . . # . . . .
+	// . . . # # . # . . . . .
+
+	mov w1, #1
+	adrp x10, g_cols@PAGE
+	add x10, x10, g_cols@PAGEOFF
+	ldr x12, [x10]
+
+	//row 0
+	strb w1, [x19, #3]
+	strb w1, [x19, #4]
+	strb w1, [x19, #6]
+
+	//row 1
+	mov x13, x12
+	strb w1, [x19, x13]
+	add x14, x13, #7
+	strb w1, [x19, x14]
+
+	//row 2
+	lsl x13, x12, #1
+	strb w1, [x19, x13]
+	add x14, x13, #3
+	strb w1, [x19, x14]
+	add x14, x13, #7
+	strb w1, [x19, x14]
+	add x14, x13, #8
+	strb w1, [x19, x14]
+
+	//row3 (Cols: 1, 2, 8, 10, 11)
+	add x13, x13, x12
+	add x14, x13, #1
+	strb w1, [x19, x14]
+	add x14, x13, #2
+	strb w1, [x19, x14]
+	add x14, x13, #8
+	strb w1, [x19, x14]
+	add x14, x13, #10
+	strb w1, [x19, x14]
+	add x14, x13, #11
+	strb w1, [x19, x14]
+
+	//row4 (Cols: 1, 2, 8, 10, 11)
+	lsl x13, x12, #2
+	add x14, x13, #1
+	strb w1, [x19, x14]
+	add x14, x13, #2
+	strb w1, [x19, x14]
+	add x14, x13, #8
+	strb w1, [x19, x14]
+	add x14, x13, #10
+	strb w1, [x19, x14]
+	add x14, x13, #11
+	strb w1, [x19, x14]
+
+	//row5 (Cols: 0, 3, 7, 8)
+	add x13, x13, x12
+	strb w1, [x19, x13]
+	add x14, x13, #3
+	strb w1, [x19, x14]
+	add x14, x13, #7
+	strb w1, [x19, x14]
+	add x14, x13, #8
+	strb w1, [x19, x14]
+
+	//row6 (Cols: 0, 7)
+	add x13, x13, x12   
+	strb w1, [x19, x13]
+	add x14, x13, #7
+	strb w1, [x19, x14]
+
+	//row7 (Cols: 3, 4, 6)
+	add x13, x13, x12
+	add x14, x13, #3
+	strb w1, [x19, x14]
+	add x14, x13, #4
+	strb w1, [x19, x14]
+	add x14, x13, #6
+	strb w1, [x19, x14]
 
 	b start_game
 	

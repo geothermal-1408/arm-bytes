@@ -20,6 +20,7 @@ The repository includes the following programs:
 - `3_0_heap_mem.s`: Heap memory allocation and usage via libc.
 - `3_2_dynamic_echo.s`: Echo-like I/O using libc calls.
 - `3_3_calc.s`: A minimal calculator skeleton (parsing and operations).
+- `4_0_game_of_life.s`: conway's game of life with 3 glider option
 
 > [!NOTE]
 >

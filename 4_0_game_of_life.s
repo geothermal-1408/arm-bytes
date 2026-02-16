@@ -175,19 +175,30 @@ init_spaceship:
 	// # . . . .
 	// # . . . #
 	// # # # # .
+
+	adrp x10, g_rows@PAGE
+	add x10, x10, g_rows@PAGEOFF
+	ldr x10, [x10]
+	
+	adrp x11, g_cols@PAGE
+	add x11, x11, g_cols@PAGEOFF
+	ldr x12, [x11]
+	
+	//start_row
+	sub x13, x10, #4
+	lsr x13, x13, #1
+	mul x15, x13, x12
+	add x19, x19, x15
 	
 	mov w1, #1
 	
-	adrp x10, g_cols@PAGE
-	add x10, x10, g_cols@PAGEOFF
-	ldr x12, [x10]
-
 	//row 0
 	strb w1, [x19, #1]
 	strb w1, [x19, #4]
 
 	//row 1
-	strb w1, [x19, x12]
+	add x13, x12, #0
+	strb w1, [x19, x13]
 
 	//row 2
 	lsl x14, x12, #1
@@ -219,10 +230,23 @@ init_pulsator:
 	// # . . . . . . # . . . .
 	// . . . # # . # . . . . .
 
+	
+	adrp x10, g_rows@PAGE
+	add x10, x10, g_rows@PAGEOFF
+	ldr x10, [x10]
+
+	adrp x11, g_cols@PAGE
+	add x11, x11, g_cols@PAGEOFF
+	ldr x12, [x11]
+
+	sub x13, x10, #8
+	lsr x13, x13, #1
+
+	mul x15, x13, x12
+
+	add x19, x19, x15
+	
 	mov w1, #1
-	adrp x10, g_cols@PAGE
-	add x10, x10, g_cols@PAGEOFF
-	ldr x12, [x10]
 
 	//row 0
 	strb w1, [x19, #3]
